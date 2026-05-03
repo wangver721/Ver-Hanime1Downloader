@@ -1,140 +1,242 @@
-# WangVer H-Downloader
+<div align="center">
 
-专为 **hanime1.me** 定制的自动化视频下载工具。通过真实浏览器配合半人工过 Cloudflare，再用多线程引擎下载，支持单集、批量与**同作者/同播放列表**一键抓取。
+# Ver-Hanime1Downloader
+
+**专为 hanime1.me 打造的高性能桌面下载器**
+
+浏览器辅助过 Cloudflare · 多线程分块下载 · 封面预览与勾选下载 · 自动按作者归档
+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![PySide6](https://img.shields.io/badge/GUI-PySide6-41CD52?logo=qt&logoColor=white)](https://doc.qt.io/qtforpython-6/)
+[![Playwright](https://img.shields.io/badge/Browser-Playwright-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/python/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)]()
+
+</div>
 
 ---
 
-## 功能概览
+## ✨ 核心特性
 
-| 功能 | 说明 |
+| 特性 | 说明 |
 |------|------|
-| **智能链接解析** | 单集 / 批量 .txt / 列表页 URL，自动提取直链（mp4/m3u8）与标题，支持 360p～1080p 画质选择 |
-| **CF 半自动绕过** | Playwright 真实浏览器、持久化用户数据；遇 CF 时挂起并提示手动验证，通过后自动提取 Cookies/UA 给下载引擎 |
-| **同列表精准解析** | 列表页仅解析「当前播放列表」内视频（`#video-playlist-wrapper` 内 overlay 链接），不混入推荐/其他作者 |
-| **多任务与分块下载** | 可配置最大并行任务数、单任务分块数，下载默认走系统/环境代理 |
-| **断点续传** | 使用 `.part` 临时文件，中断后可从断点继续 |
-| **文件名清洗** | 自动去掉标题中的站点水印（如「H動漫裏番線上看」「Hanime1.me」），并剔除非法字符，便于媒体库刮削 |
+| 🎨 **Apple 风浅色 GUI** | 圆润极简的桌面界面，卡片 + 表格双视图自由切换 |
+| 🧠 **先解析后下载** | 解析完成后展示封面 / 标题 / 作者，勾选确认再开始下载 |
+| 🛡️ **CF 半自动绕过** | 浏览器默认隐藏运行；触发 Cloudflare 验证时自动弹窗，验证通过后再次隐藏 |
+| 📋 **剪贴板感应** | 复制视频链接 → 软件自动提示，点解析即可填入 |
+| 🎯 **同列表精准抓取** | 严格限定 `#video-playlist-wrapper` 范围，不混入推荐列表 |
+| ⚡ **多任务 + 分块并发** | 共享 `httpx.AsyncClient` 连接池 + 自动重试，速率与稳定性兼顾 |
+| 📂 **自动按作者归档** | 多视频下载时自动建 `输出目录/作者/视频.mp4` |
+| 🔄 **断点续传** | `.part` 临时文件，中断后继续下载从断点接力 |
+| 🚦 **细粒度控制** | 单任务取消 / 全部取消，完成后一键打开所在文件夹 |
+| 🧹 **文件名清洗** | 自动剥离站点水印（`H動漫裏番線上看`、`Hanime1.me` 等），便于媒体库刮削 |
 
 ---
 
-## 环境要求
+## 🚀 快速开始
 
-- **Python** 3.10+
-- **Chrome 或 Chromium**（Playwright 会优先使用系统 Chrome）
+### 方式一：下载预编译版本（推荐）
 
----
+1. 前往 [Releases](../../releases) 下载最新的 `Ver-Hanime1Downloader-vX.X.X-windows.zip`
+2. 解压到任意目录
+3. 双击 `Ver-Hanime1Downloader.exe` 即可启动
 
-## 安装
+> **首次启动需要**：本机已安装 [Google Chrome](https://www.google.com/chrome/)（Playwright 会自动调用系统 Chrome）。
+
+### 方式二：从源码运行
 
 ```bash
-cd "WangVer H-Downloader"
+git clone https://github.com/<你的用户名>/Ver-Hanime1Downloader.git
+cd Ver-Hanime1Downloader
+
 pip install -r requirements.txt
-playwright install chromium
+python -m playwright install chromium
+
+python run.py
 ```
 
 ---
 
-## 使用方式
+## 🖥️ 使用流程
 
-### 交互式主菜单（推荐）
-
-无参数运行即可进入主菜单：
-
-```bash
-python run.py
-# 或
-python -m wangver_h_downloader.cli
+```
+1. 粘贴链接          →  支持单链接 / 多链接（每行一个）/ .txt 路径 / 拖拽
+2. 点击「解析」       →  浏览器后台运行；遇 CF 自动弹窗供你验证
+3. 选择解析模式       →  仅解析当前视频  /  展开整个播放列表
+4. 浏览预览卡片       →  封面 + 标题 + 作者，勾选要下载的项
+5. 点击「下载勾选项」  →  实时进度、速度、剩余时间；可单独/全部取消
+6. 完成后打开文件夹   →  卡片 / 表格行的 📁 按钮一键定位文件
 ```
 
-| 选项 | 说明 |
-|------|------|
-| **1** | 单链接下载 — 输入一集视频页 URL |
-| **2** | 批量下载 — 输入 .txt 路径（每行一个 URL） |
-| **3** | 列表页下载 — 输入任意视频页 URL，自动抓取**该页右侧播放列表**内全部视频 |
-| **4** | 设置 — 输出目录、最大并行数、分块线程数、画质（360p/480p/720p/1080p） |
-| **0** | 退出 |
+### 双视图
 
-列表页下载说明：若输入的是单集链接（如 `https://hanime1.me/watch?v=xxx`），会解析该页**右侧同一作者/同一播放列表**中的视频并批量下载，不会混入「更多推荐」等其它列表。
+- **卡片视图**：封面网格（1～3 列自适应），适合浏览缩略图
+- **表格视图**：紧凑行式布局，封面缩略图 + 标题 + 作者 + 进度条 + 操作按钮
 
-### 命令行直连
+### 选择/勾选辅助
+
+- **全选 / 取消全选 / 反选** 三按钮，批量操作高效
+- 勾选后行背景变浅蓝，状态一目了然
+
+---
+
+## ⚙️ 设置项
+
+| 选项 | 默认 | 说明 |
+|------|------|------|
+| 输出目录 | `./downloads` | 下载文件保存位置；多视频时自动按作者建子目录 |
+| 画质 | `1080p` | 优先匹配的视频画质（`360p` / `480p` / `720p` / `1080p`） |
+| 任务并发 | `3` | 同时下载的视频数量 |
+| 分块并发 | `8` | 单个视频的分块并行连接数 |
+
+> 下载默认走系统/环境代理（`HTTP_PROXY`、`HTTPS_PROXY` 与系统代理）。
+
+---
+
+## 🧰 命令行模式（可选）
+
+GUI 是默认模式。若你想用纯终端：
+
+```bash
+python run.py --cli
+```
+
+或直接用模块入口：
 
 ```bash
 # 单集
-python -m wangver_h_downloader.cli "https://hanime1.me/watch?v=xxx" -o ./downloads
+python -m wangver_h_downloader.cli "https://hanime1.me/watch?v=xxx"
 
 # 批量（.txt 每行一个链接）
 python -m wangver_h_downloader.cli -b urls.txt -o ./downloads
-
-# 列表页（同主菜单逻辑：解析当前页播放列表）
-python -m wangver_h_downloader.cli "https://hanime1.me/watch?v=xxx" -o ./downloads
 ```
 
-### 常用参数
-
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `-o, --output` | 下载输出目录 | `./downloads` |
-| `--max-tasks` | 最大并行下载任务数 | 3 |
-| `--chunk-threads` | 单任务分块并发数 | 8 |
-| `--quality` | 优先画质 | 1080p |
-| `--user-data-dir` | 浏览器用户数据目录（持久化 Cookie） | `./browser_user_data` |
-| `--headless` | 无头模式（不推荐，CF 易拦截） | 关 |
-| `--no-ui` | 无 URL 时仅显示帮助、不进入菜单 | 关 |
+| 参数 | 默认 | 说明 |
+|------|------|------|
+| `-o, --output` | `./downloads` | 下载输出目录 |
+| `--max-tasks` | `3` | 最大并行下载任务数 |
+| `--chunk-threads` | `8` | 单任务分块并发数 |
+| `--quality` | `1080p` | 优先画质 |
+| `--user-data-dir` | `./browser_user_data` | 浏览器用户数据目录（持久化 Cookie） |
+| `--headless` | `false` | 无头模式（不推荐，CF 易拦截） |
 
 ---
 
-## 首次使用与 CF 验证
+## 🏗️ 自行打包 EXE
 
-1. 首次运行会弹出**带界面的浏览器**；若出现 Cloudflare 验证页，终端会提示：
-   - **「触发 Cloudflare 拦截，请在弹出的浏览器窗口中手动完成验证！」**
-2. 在浏览器中完成验证后，回到终端按 **Enter** 继续。
-3. 验证通过后，Cookies 会保存到 `--user-data-dir`，后续同站访问可减少重复验证。
+```bash
+pip install pyinstaller
+python build.py
+```
 
----
-
-## 代理与下载
-
-- 下载请求**默认使用系统/环境代理**（`trust_env=True`），会读取 `HTTP_PROXY` / `HTTPS_PROXY` 及系统代理设置。
-- 若下载无速度，可检查代理是否生效；也可在设置中适当调高「单任务分块线程数」或调低以适配代理限速。
+打包完成后，产物位于 `dist/Ver-Hanime1Downloader/`，将整个目录压缩为 ZIP 即可上传到 Releases。
 
 ---
 
-## 输出与断点续传
-
-- 文件先写入 `{标题}.mp4.part`（或 `.m3u8.part`），完成后自动重命名为 `{标题}.mp4`。
-- 标题会**自动去掉**站点水印（如「 - H動漫裏番線上看 - Hanime1.me」），仅保留视频名。
-- 中断后再次下载同一视频时，会识别已有 `.part` 并从断点续传。
-
----
-
-## 项目结构
+## 📁 项目结构
 
 ```
-WangVer H-Downloader/
-├── .gitignore         # 忽略 downloads/、browser_user_data/、*.part、__pycache__ 等
+Ver-Hanime1Downloader/
+├── run.py                  # 入口（默认 GUI；--cli 进入终端模式）
+├── build.py                # PyInstaller 一键打包
 ├── requirements.txt
-├── run.py
+├── LICENSE                 # MIT
 ├── README.md
+├── .gitignore
 └── wangver_h_downloader/
     ├── __init__.py
-    ├── config.py          # 输出目录、并发、画质、CF 特征等
-    ├── parser.py          # 链接解析、直链提取、标题/水印清洗、播放列表提取
-    ├── browser_cf.py      # 浏览器启动、CF 检测与挂起、凭证提取
-    ├── downloader.py      # 分块并发下载、断点续传（直链做 html.unescape）
-    ├── file_manager.py    # 文件名清洗、.part 查找
-    ├── ui_theme.py        # 界面主题常量
-    └── cli.py             # Rich 交互式菜单、进度条、结果表格
+    ├── config.py           # 输出目录 / 并发 / 画质 / CF 特征
+    ├── parser.py           # 链接解析、直链提取、标题/作者/封面/水印清洗
+    ├── browser_cf.py       # Playwright 启动、CF 检测、窗口显隐
+    ├── downloader.py       # 共享连接池 + 重试 + 分块并发 + 断点续传
+    ├── file_manager.py     # 文件名 sanitize、.part 续传管理
+    ├── ui_theme.py         # 终端主题常量
+    ├── cli.py              # Rich 终端交互式界面
+    └── gui.py              # PySide6 桌面 GUI
 ```
 
 ---
 
-## 扩展说明（PRD 预留）
+## ❓ 常见问题
 
-- **Telegram 通知**：在 `browser_cf.py` 的 `on_cf_triggered` 中可接入 Telegram Bot，便于 VPS 上通过 VNC/RDP 完成验证。
-- **aria2 RPC**：可在 `downloader.py` 中增加 aria2c RPC，沿用浏览器提供的 Cookies/UA 做下载。
+<details>
+<summary><b>Q: 启动后浏览器一直没出现？</b></summary>
+
+浏览器默认是隐藏运行的（推到屏幕外）。**只有触发 Cloudflare 验证时才会自动弹出**，验证完成后再次隐藏，让你专注下载结果。
+
+</details>
+
+<details>
+<summary><b>Q: 报 ConnectError 或下载速度为 0？</b></summary>
+
+通常是网络/代理问题。请确认：
+- 系统能正常访问 hanime1.me
+- 如果你用代理，确认 `HTTP_PROXY` / `HTTPS_PROXY` 设置正确
+- 适当调低「分块并发」（默认 8 → 4）
+
+下载引擎已内置 **4 次指数退避重试**，瞬时故障会自动恢复。
+
+</details>
+
+<details>
+<summary><b>Q: 下载到一半中断，如何继续？</b></summary>
+
+直接重新解析同一链接并下载即可。引擎会自动识别 `.part` 临时文件并从断点续传，无需任何额外操作。
+
+</details>
+
+<details>
+<summary><b>Q: 列表页解析出来的视频太多，能否只下其中几个？</b></summary>
+
+可以。解析完成后，点击卡片或表格行的复选框即可勾选/取消勾选；也可以用顶部的「全选 / 取消全选 / 反选」批量操作。
+
+</details>
+
+<details>
+<summary><b>Q: 想取消某个正在下载的视频，但又不想停其他？</b></summary>
+
+点击该卡片或表格行右侧的红色 ✕ 按钮即可单独取消。`.part` 临时文件会保留，下次下载自动续传。
+
+</details>
+
+<details>
+<summary><b>Q: macOS / Linux 能用吗？</b></summary>
+
+源码层面跨平台，GUI 主体在 macOS / Linux 都能运行。但浏览器窗口的「触发 CF 时自动弹出 / 验证后隐藏」目前只在 Windows 实现（用 Win32 API 控制窗口位置），其他平台浏览器会一直可见。
+
+预编译 EXE 仅 Windows，其他平台请从源码运行。
+
+</details>
 
 ---
 
-## 免责声明
+## 🎯 路线图
 
-本工具仅供学习与个人备份使用，请遵守目标站点服务条款与当地法律法规。
+- [ ] macOS / Linux 的窗口显隐适配（基于 NSWindow / X11）
+- [ ] aria2 RPC 调用（接管已有 Cookies/UA 做下载）
+- [ ] Telegram Bot 通知（CF 验证提醒，便于 VPS 远程介入）
+- [ ] 内置 ffmpeg 自动合并 m3u8 切片
+
+---
+
+## 🤝 贡献
+
+欢迎 PR 和 Issue。请确保改动通过：
+
+```bash
+python -m compileall wangver_h_downloader run.py
+```
+
+---
+
+## ⚠️ 免责声明
+
+- 本工具仅用于**学习交流和个人备份**用途
+- 请遵守目标站点的服务条款与所在地区的法律法规
+- 因使用本工具产生的任何后果由使用者自行承担
+
+---
+
+## 📄 License
+
+[MIT](LICENSE) © 2026 WangVer

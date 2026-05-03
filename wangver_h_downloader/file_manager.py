@@ -1,40 +1,62 @@
 """
-断点续传与媒体文件管理：.part 识别、智能重命名、输出目录管理。
+断点续传与媒体文件管理：.part 识别、智能重命名、文件名水印剥离。
 """
+import html
 import re
 from pathlib import Path
 from typing import Optional
 
-from .config import DEFAULT_OUTPUT_DIR, INVALID_FILENAME_CHARS, PART_SUFFIX
+from .config import INVALID_FILENAME_CHARS, PART_SUFFIX
+
+
+# 站点水印（出现在标题尾部，需在生成文件名前剥离）
+_WATERMARKS = [
+    r"\s*[\-–—|｜]\s*H動漫裏番線上看\s*[\-–—|｜]\s*Hanime1\.me\s*$",
+    r"\s*[\-–—|｜]\s*H動漫裏番線上看\s*$",
+    r"\s*[\-–—|｜]\s*Hanime1\.me\s*$",
+    r"\s*[\-–—|｜]\s*hanime1\s*$",
+    r"\s*-\s*H動漫裏番線上看\s*$",
+]
+
+
+def strip_watermark(name: str) -> str:
+    """去掉标题尾部的站点水印（兼容多种破折号与全角竖线）。"""
+    if not name:
+        return name
+    s = html.unescape(name).strip()
+    for _ in range(2):
+        for pat in _WATERMARKS:
+            s = re.sub(pat, "", s, flags=re.I).strip()
+    return s
 
 
 def sanitize_filename(name: str) -> str:
-    """剔除文件名中的非法字符，便于媒体库刮削。"""
+    """生成合法的文件名：水印剥离 + 非法字符替换 + 长度限制。"""
     if not name or not name.strip():
         return "未命名"
-    s = re.sub(INVALID_FILENAME_CHARS, "", name.strip())
-    s = re.sub(r"\s+", " ", s)
-    return s[:200].strip() if len(s) > 200 else s
+    s = strip_watermark(name)
+    s = re.sub(INVALID_FILENAME_CHARS, "", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    s = s.rstrip(" .")  # Windows 不允许文件名以空格或点结尾
+    if not s:
+        return "未命名"
+    return s[:180] if len(s) > 180 else s
 
 
 def find_part_file(output_dir: Path, base_name: str, ext: str) -> Optional[Path]:
-    """
-    在输出目录中查找与 base_name + ext 对应的 .part 临时文件，用于断点续传。
-    约定：part 文件名为 {base_name}{ext}.part 或 {base_name}.part。
-    """
+    """查找断点续传临时文件 {base}{ext}.part 或 {base}.part。"""
     output_dir = Path(output_dir)
     if not output_dir.exists():
         return None
-    candidate = output_dir / f"{base_name}{ext}{PART_SUFFIX}"
-    if candidate.exists():
-        return candidate
-    candidate2 = output_dir / f"{base_name}{PART_SUFFIX}"
-    if candidate2.exists():
-        return candidate2
+    for cand in (
+        output_dir / f"{base_name}{ext}{PART_SUFFIX}",
+        output_dir / f"{base_name}{PART_SUFFIX}",
+    ):
+        if cand.exists():
+            return cand
     return None
 
 
 def build_output_path(output_dir: Path, title: str, ext: str = ".mp4") -> Path:
     """根据标题生成最终输出文件路径。"""
-    safe = sanitize_filename(title)
-    return Path(output_dir) / f"{safe}{ext}"
+    return Path(output_dir) / f"{sanitize_filename(title)}{ext}"

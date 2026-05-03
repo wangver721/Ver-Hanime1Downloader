@@ -19,6 +19,8 @@ class VideoTarget:
     direct_url: str    # 直链（mp4 或 m3u8）
     title: str
     is_m3u8: bool = False
+    cover_url: str = ""
+    author: str = ""
 
 
 # 页面标题中常见的站点水印，保存文件名时去掉（支持全角/空格等变体）
@@ -42,14 +44,72 @@ def _strip_title_watermark(raw: str) -> str:
 
 
 def _sanitize_title(raw: str) -> str:
-    """清洗标题为合法文件名：先解码 HTML 实体，再去水印，再剔除非法字符。"""
+    """清洗标题为合法文件名：解码 HTML、剥离水印、剔除非法字符。"""
+    from .file_manager import sanitize_filename
     if not raw or not raw.strip():
         return "未命名"
     s = html.unescape(raw.strip())
     s = _strip_title_watermark(s)
-    s = re.sub(r'[\\/:*?"<>|]', "", s)
-    s = re.sub(r"\s+", " ", s).strip()
-    return s[:200] if len(s) > 200 else s or "未命名"
+    return sanitize_filename(s)
+
+
+def _extract_author(page_html: str) -> str:
+    """提取视频上传者/作者名称，找不到返回空字符串。"""
+    from urllib.parse import unquote
+    patterns = [
+        # hanime1 常见：链接到 ?query=作者
+        r'<a[^>]+href="[^"]*(?:\?|&amp;|&)query=([^"&]+)[^"]*"[^>]*>\s*([^<]+?)\s*</a>',
+        r'<a[^>]+href="[^"]*/artists?/([^"/?]+)"[^>]*>\s*([^<]+?)\s*</a>',
+        # 单一捕获组兜底
+        r'<a[^>]+href="[^"]*(?:\?|&amp;|&)query=([^"&]+)[^"]*"',
+        r'<meta[^>]+name=["\']twitter:creator["\'][^>]+content=["\']@?([^"\']+)["\']',
+        r'<meta[^>]+property=["\']og:author["\'][^>]+content=["\']([^"\']+)["\']',
+    ]
+    for pat in patterns:
+        m = re.search(pat, page_html, re.I)
+        if not m:
+            continue
+        # 优先取最后一个捕获组（通常是显示文本）
+        raw = m.group(m.lastindex).strip()
+        raw = html.unescape(unquote(raw))
+        raw = re.sub(r'[\\/:*?"<>|\r\n\t]', "", raw).strip()
+        # 过滤明显不是作者名的结果
+        if 1 <= len(raw) <= 60 and not raw.lower().startswith("http"):
+            return raw
+    return ""
+
+
+def _extract_cover_url(page_html: str, page_url: str) -> str:
+    """提取封面图 URL（优先 og:image，其次 video poster、twitter:image）。"""
+    candidates = [
+        re.search(
+            r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+            page_html,
+            re.I,
+        ),
+        re.search(
+            r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)["\']',
+            page_html,
+            re.I,
+        ),
+        re.search(
+            r'<video[^>]+poster=["\']([^"\']+)["\']',
+            page_html,
+            re.I,
+        ),
+    ]
+    for m in candidates:
+        if not m:
+            continue
+        raw = html.unescape(m.group(1).strip())
+        if not raw:
+            continue
+        if raw.startswith("//"):
+            return "https:" + raw
+        if raw.startswith("/"):
+            return urljoin(page_url, raw)
+        return raw
+    return ""
 
 
 def _is_list_page(url: str) -> bool:
@@ -84,6 +144,8 @@ def parse_single_page_html(
     title_m = re.search(r"<title[^>]*>([^<]+)</title>", page_html, re.I | re.S)
     if title_m:
         title = _sanitize_title(title_m.group(1).strip())
+    cover_url = _extract_cover_url(page_html, page_url)
+    author = _extract_author(page_html)
 
     # 提取所有 mp4 链接（带画质信息的 URL 或相邻文本）
     mp4_urls = re.findall(r'["\']?(https?://[^"\'>\s]+\.mp4[^"\'>\s]*)["\']?', page_html, re.I)
@@ -128,7 +190,14 @@ def parse_single_page_html(
     # 直链可能含 HTML 实体（如 &amp;），请求前必须解码，否则 403
     direct_url = html.unescape(direct_url)
 
-    return VideoTarget(url=page_url, direct_url=direct_url, title=title, is_m3u8=is_m3u8)
+    return VideoTarget(
+        url=page_url,
+        direct_url=direct_url,
+        title=title,
+        is_m3u8=is_m3u8,
+        cover_url=cover_url,
+        author=author,
+    )
 
 
 def collect_urls_from_batch_file(file_path: Path) -> List[str]:

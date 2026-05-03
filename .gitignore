@@ -1,4 +1,4 @@
-# 下载输出与浏览器数据（测试/运行产生）
+# 下载输出与浏览器数据（运行时产生）
 downloads/
 browser_user_data/
 
@@ -12,8 +12,11 @@ __pycache__/
 .Python
 *.egg-info/
 .eggs/
-dist/
+
+# 打包产物（PyInstaller）
 build/
+dist/
+*.spec
 
 # 虚拟环境
 .venv/

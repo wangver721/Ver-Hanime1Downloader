@@ -172,20 +172,31 @@ async def run_single(
         task_id = progress.add_task(target.title, total=None)
         received = [0]
 
-        def cb(n: int):
+        def cb(n: int, total: Optional[int] = None):
             received[0] += n
+            if total is not None:
+                progress.update(task_id, total=total)
             progress.update(task_id, completed=received[0])
 
-        path = await download_task(
-            target.direct_url,
-            target.title,
-            output_dir,
-            credentials,
-            chunk_threads=chunk_threads,
-            progress_callback=cb,
-        )
-    console.print(f"[green]✓ 已保存: {path}[/]")
-    return path
+        try:
+            path = await download_task(
+                target.direct_url,
+                target.title,
+                output_dir,
+                credentials,
+                chunk_threads=chunk_threads,
+                progress_callback=cb,
+            )
+            console.print(f"[green]✓ 已保存: {path}[/]")
+            return path
+        except Exception as e:
+            err_msg = str(e)
+            if hasattr(e, "response") and hasattr(e.response, "status_code"):
+                err_msg = f"HTTP {e.response.status_code} - {err_msg}"
+            if not err_msg:
+                err_msg = repr(e)
+            console.print(f"[red]✗ 下载失败: {err_msg}[/]")
+            return None
 
 
 async def run_batch(
@@ -236,14 +247,16 @@ async def run_batch(
         sem = asyncio.Semaphore(max_concurrent_tasks)
         success_list: List[str] = []
 
-        async def run_one(t: VideoTarget):
-            async with sem:
-                with create_progress(t.title) as progress:
+        with create_progress("批量下载") as progress:
+            async def run_one(t: VideoTarget):
+                async with sem:
                     task_id = progress.add_task(t.title, total=None)
                     received = [0]
 
-                    def cb(n: int):
+                    def cb(n: int, total: Optional[int] = None):
                         received[0] += n
+                        if total is not None:
+                            progress.update(task_id, total=total)
                         progress.update(task_id, completed=received[0])
 
                     try:
@@ -256,11 +269,18 @@ async def run_batch(
                             progress_callback=cb,
                         )
                         success_list.append(t.title)
-                        console.print(f"[green]✓ 完成: {t.title}[/]")
+                        progress.console.print(f"[green]✓ 完成: {t.title}[/]")
                     except Exception as e:
-                        console.print(f"[red]✗ {t.title}: {e}[/]")
+                        err_msg = str(e)
+                        if hasattr(e, "response") and hasattr(e.response, "status_code"):
+                            err_msg = f"HTTP {e.response.status_code} - {err_msg}"
+                        if not err_msg:
+                            err_msg = repr(e)
+                        progress.console.print(f"[red]✗ {t.title}: {err_msg}[/]")
+                    finally:
+                        progress.update(task_id, visible=False)
 
-        await asyncio.gather(*[run_one(t) for t in targets])
+            await asyncio.gather(*[run_one(t) for t in targets])
         return success_list
     finally:
         if handler is not None:

@@ -1,15 +1,17 @@
-# WangVer H-Downloader 依赖
-# Python 3.10+
+# Ver-Hanime1Downloader 运行时依赖（Python 3.10+）
 
-# 浏览器自动化与 CF 绕过
+# 浏览器自动化（用于过 Cloudflare）
 playwright>=1.40.0
 
-# 异步 HTTP 与并发下载
+# 异步 HTTP / 文件 IO
 httpx>=0.25.0
 aiofiles>=23.2.0
 
-# 终端 UI 与日志
+# 终端 UI（CLI 模式）
 rich>=13.7.0
 
-# 可选：aria2 RPC 调用（后续扩展）
-# aioaria2>=0.1.0
+# 桌面 GUI
+PySide6>=6.7.0
+
+# ── 仅开发/打包需要 ───────────────────────────
+# pip install pyinstaller   # 然后 python build.py 生成 EXE
