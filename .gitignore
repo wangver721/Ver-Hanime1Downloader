@@ -18,6 +18,9 @@ build/
 dist/
 *.spec
 
+# 发布 ZIP（请上传到 GitHub Releases，不入仓库）
+Ver-Hanime1Downloader-v*.zip
+
 # 虚拟环境
 .venv/
 venv/

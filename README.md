@@ -12,6 +12,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)]()
 
+<br>
+
+![预览](assets/screenshot.png)
+
 </div>
 
 ---
@@ -46,7 +50,7 @@
 ### 方式二：从源码运行
 
 ```bash
-git clone https://github.com/<你的用户名>/Ver-Hanime1Downloader.git
+git clone https://github.com/wangver721/Ver-Hanime1Downloader.git
 cd Ver-Hanime1Downloader
 
 pip install -r requirements.txt
