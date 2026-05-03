@@ -122,23 +122,11 @@ python -m wangver_h_downloader.cli -b urls.txt -o ./downloads
 
 ---
 
-## 🏗️ 自行打包 EXE
-
-```bash
-pip install pyinstaller
-python build.py
-```
-
-打包完成后，产物位于 `dist/Ver-Hanime1Downloader/`，将整个目录压缩为 ZIP 即可上传到 Releases。
-
----
-
 ## 📁 项目结构
 
 ```
 Ver-Hanime1Downloader/
 ├── run.py                  # 入口（默认 GUI；--cli 进入终端模式）
-├── build.py                # PyInstaller 一键打包
 ├── requirements.txt
 ├── LICENSE                 # MIT
 ├── README.md
@@ -150,7 +138,6 @@ Ver-Hanime1Downloader/
     ├── browser_cf.py       # Playwright 启动、CF 检测、窗口显隐
     ├── downloader.py       # 共享连接池 + 重试 + 分块并发 + 断点续传
     ├── file_manager.py     # 文件名 sanitize、.part 续传管理
-    ├── ui_theme.py         # 终端主题常量
     ├── cli.py              # Rich 终端交互式界面
     └── gui.py              # PySide6 桌面 GUI
 ```

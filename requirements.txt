@@ -12,6 +12,3 @@ rich>=13.7.0
 
 # 桌面 GUI
 PySide6>=6.7.0
-
-# ── 仅开发/打包需要 ───────────────────────────
-# pip install pyinstaller   # 然后 python build.py 生成 EXE
